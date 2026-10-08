@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="380" viewBox="0 0 900 380" font-family="Helvetica, Arial, sans-serif" font-size="13">
+<rect width="900" height="380" fill="#ffffff"/>
+<text x="450.0" y="26" text-anchor="middle" font-size="16" font-weight="bold" fill="#202124">Wiring – ESP32 to the pump's room sensor terminals 303/304</text>
+<rect x="30" y="90" width="150" height="170" rx="8" fill="#e8f0fe" stroke="#4e79a7" stroke-width="2"/>
+<text x="105" y="115" text-anchor="middle" font-weight="bold" fill="#202124">ESP32 / ESP32-S3</text>
+<text x="170" y="155" text-anchor="end" fill="#202124">GPIO (pin:)</text>
+<text x="170" y="235" text-anchor="end" fill="#202124">GND</text>
+<path d="M180,150 H230" stroke="#202124" stroke-width="2" fill="none"/>
+<rect x="230" y="140" width="60" height="20" fill="#ffffff" stroke="#202124" stroke-width="2"/>
+<text x="260" y="132" text-anchor="middle" fill="#202124">R1 220 Ω</text>
+<path d="M290,150 H360" stroke="#202124" stroke-width="2" fill="none"/>
+<path d="M180,230 H360" stroke="#202124" stroke-width="2" fill="none"/>
+<rect x="360" y="110" width="150" height="150" rx="6" fill="#fef7e0" stroke="#f9ab00" stroke-width="2"/>
+<text x="435" y="100" text-anchor="middle" font-weight="bold" fill="#202124">U1 TLP241A (photoMOS)</text>
+<text x="372" y="155" fill="#202124">1 anode</text><text x="372" y="235" fill="#202124">2 cathode</text>
+<text x="498" y="155" text-anchor="end" fill="#202124">4</text><text x="498" y="235" text-anchor="end" fill="#202124">3</text>
+<path d="M400,175 L420,195 L400,215 Z" fill="#f9ab00" opacity="0.6"/>
+<path d="M455,175 V215 M465,180 V210" stroke="#202124" stroke-width="2"/>
+<text x="435" y="250" text-anchor="middle" font-size="11" fill="#5f6368">isolated, polarity-free output</text>
+<path d="M510,150 H780" stroke="#202124" stroke-width="2" fill="none"/>
+<path d="M510,230 H590" stroke="#202124" stroke-width="2" fill="none"/>
+<rect x="590" y="220" width="70" height="20" fill="#ffffff" stroke="#202124" stroke-width="2"/>
+<text x="625" y="212" text-anchor="middle" fill="#202124">R2 1.1 kΩ 1 W</text>
+<path d="M660,230 H780" stroke="#202124" stroke-width="2" fill="none"/>
+<path d="M720,150 V175 M720,205 V230" stroke="#202124" stroke-width="2" fill="none"/>
+<path d="M708,175 H732 L720,190 Z M708,205 H732 L720,190 Z" fill="#ffffff" stroke="#202124" stroke-width="1.5"/>
+<text x="702" y="194" text-anchor="end" fill="#5f6368" font-size="11">D1 P6KE33CA</text>
+<circle cx="790" cy="150" r="9" fill="#ffffff" stroke="#202124" stroke-width="2"/>
+<text x="808" y="155" font-weight="bold" fill="#202124">303</text>
+<circle cx="790" cy="230" r="9" fill="#ffffff" stroke="#202124" stroke-width="2"/>
+<text x="808" y="235" font-weight="bold" fill="#202124">304</text>
+<rect x="770" y="105" width="110" height="160" rx="6" fill="none" stroke="#9aa0a6" stroke-dasharray="5,4"/>
+<text x="825" y="98" text-anchor="middle" fill="#5f6368">heat pump</text>
+<text x="30" y="300" font-size="12" fill="#3c4043">Line idle ≈ 27 V DC (pump side has ≈ 1.7 kΩ in series). Switching R2 across the line pulls it to ≈ 10 V – that is the pulse.</text>
+<text x="30" y="319" font-size="12" fill="#3c4043">Never connect 303/304 to the ESP directly. U1 isolates the ESP; it can stay on its normal USB/5 V supply.</text>
+<text x="30" y="338" font-size="12" fill="#3c4043">R1: ≈ 9 mA through U1's LED from 3.3 V. If the LED does not light, swap U1 pins 1/2. D1 (optional) protects against spikes.</text>
+<text x="30" y="357" font-size="12" fill="#3c4043">Optional read-back: PC817 + 4.7 kΩ across 303/304, output with 10 kΩ pull-up to another GPIO (not used by the firmware yet).</text>
+</svg>

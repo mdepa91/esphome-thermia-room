@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1157" height="300" viewBox="0 0 1157 300" font-family="Helvetica, Arial, sans-serif">
+<rect width="1157" height="300" fill="#ffffff"/>
+<text x="578.5" y="24" text-anchor="middle" font-size="16" font-weight="bold" fill="#202124">Bit timing – pulse-distance coding (each bit = gap, then a 60 ms pulse)</text>
+<defs><marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#80868b"/></marker></defs>
+<text x="32" y="84" text-anchor="end" font-size="11" fill="#5f6368">load</text>
+<text x="32" y="154" text-anchor="end" font-size="11" fill="#5f6368">idle</text>
+<text x="205.0" y="172" text-anchor="middle" font-size="11" fill="#80868b">line idle between frames (frame_gap)</text>
+<rect x="370.0" y="42" width="78.10000000000002" height="22" fill="#4e79a7" opacity="0.15"/>
+<text x="409.05" y="58" text-anchor="middle" font-size="12" font-weight="bold" fill="#4e79a7">raw 1</text>
+<line x1="370.0" y1="184" x2="415.1" y2="184" stroke="#80868b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="392.55" y="200" text-anchor="middle" font-size="11" fill="#3c4043">82 ms</text>
+<line x1="415.1" y1="184" x2="448.1" y2="184" stroke="#202124"/>
+<text x="431.6" y="216" text-anchor="middle" font-size="11" fill="#202124">60</text>
+<rect x="448.1" y="42" width="78.10000000000002" height="22" fill="#4e79a7" opacity="0.15"/>
+<text x="487.15000000000003" y="58" text-anchor="middle" font-size="12" font-weight="bold" fill="#4e79a7">raw 1</text>
+<line x1="448.1" y1="184" x2="493.20000000000005" y2="184" stroke="#80868b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="470.65000000000003" y="200" text-anchor="middle" font-size="11" fill="#3c4043">82 ms</text>
+<line x1="493.20000000000005" y1="184" x2="526.2" y2="184" stroke="#202124"/>
+<text x="509.70000000000005" y="216" text-anchor="middle" font-size="11" fill="#202124">60</text>
+<rect x="526.2" y="42" width="246.39999999999998" height="22" fill="#e15759" opacity="0.15"/>
+<text x="649.4000000000001" y="58" text-anchor="middle" font-size="12" font-weight="bold" fill="#e15759">raw 0</text>
+<line x1="526.2" y1="184" x2="739.6" y2="184" stroke="#80868b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="632.9000000000001" y="200" text-anchor="middle" font-size="11" fill="#3c4043">388 ms</text>
+<line x1="739.6" y1="184" x2="772.6" y2="184" stroke="#202124"/>
+<text x="756.1" y="216" text-anchor="middle" font-size="11" fill="#202124">60</text>
+<rect x="772.6" y="42" width="78.10000000000002" height="22" fill="#4e79a7" opacity="0.15"/>
+<text x="811.6500000000001" y="58" text-anchor="middle" font-size="12" font-weight="bold" fill="#4e79a7">raw 1</text>
+<line x1="772.6" y1="184" x2="817.7" y2="184" stroke="#80868b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="795.1500000000001" y="200" text-anchor="middle" font-size="11" fill="#3c4043">82 ms</text>
+<line x1="817.7" y1="184" x2="850.7" y2="184" stroke="#202124"/>
+<text x="834.2" y="216" text-anchor="middle" font-size="11" fill="#202124">60</text>
+<rect x="850.7" y="42" width="246.4000000000001" height="22" fill="#e15759" opacity="0.15"/>
+<text x="973.9000000000001" y="58" text-anchor="middle" font-size="12" font-weight="bold" fill="#e15759">raw 0</text>
+<line x1="850.7" y1="184" x2="1064.1000000000001" y2="184" stroke="#80868b" marker-start="url(#a)" marker-end="url(#a)"/>
+<text x="957.4000000000001" y="200" text-anchor="middle" font-size="11" fill="#3c4043">388 ms</text>
+<line x1="1064.1000000000001" y1="184" x2="1097.1000000000001" y2="184" stroke="#202124"/>
+<text x="1080.6000000000001" y="216" text-anchor="middle" font-size="11" fill="#202124">60</text>
+<path d="M40,150 L370.0,150 L415.1,150 L415.1,80 L448.1,80 L448.1,150 L493.20000000000005,150 L493.20000000000005,80 L526.2,80 L526.2,150 L739.6,150 L739.6,80 L772.6,80 L772.6,150 L817.7,150 L817.7,80 L850.7,80 L850.7,150 L1064.1000000000001,150 L1064.1000000000001,80 L1097.1000000000001,80 L1097.1000000000001,150" fill="none" stroke="#202124" stroke-width="2.5"/>
+<text x="40" y="248" font-size="12" fill="#3c4043">short gap 82 ms → raw 1 (period ≈ 142 ms)   ·   long gap 388 ms → raw 0 (period ≈ 448 ms)   ·   values of the working installation</text>
+<text x="40" y="266" font-size="12" fill="#3c4043">“load” = the emulator switches its load across 303/304 (photoMOS on); polarity_invert flips this if needed</text>
+<text x="40" y="284" font-size="12" fill="#3c4043">a whole frame takes 6–9 s; the pump re-synchronises on the idle gap, so frames must not be sent back to back</text>
+</svg>
