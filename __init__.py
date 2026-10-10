@@ -5,7 +5,14 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import esp32, number
-from esphome.const import CONF_ID, CONF_PIN, DEVICE_CLASS_TEMPERATURE, UNIT_CELSIUS
+from esphome.const import (
+    CONF_ID,
+    CONF_MAX_VALUE,
+    CONF_MIN_VALUE,
+    CONF_PIN,
+    DEVICE_CLASS_TEMPERATURE,
+    UNIT_CELSIUS,
+)
 
 CODEOWNERS = []
 AUTO_LOAD = ["number"]
@@ -26,6 +33,33 @@ CONF_SETPOINT = "setpoint"
 
 _TEMPERATURE_NUMBER = dict(device_class=DEVICE_CLASS_TEMPERATURE, unit_of_measurement=UNIT_CELSIUS)
 
+# The pump raises the room sensor alarm for setpoints below 16 °C (checked on a Thermia), so that is the default
+# minimum; 31.5 °C is the default maximum. The frame itself can carry 5-35 °C; widen the range in YAML if your pump
+# accepts more.
+SETPOINT_FRAME_MIN, SETPOINT_FRAME_MAX = 5.0, 35.0
+SETPOINT_DEFAULT_MIN, SETPOINT_DEFAULT_MAX = 16.0, 31.5
+
+
+def _validate_setpoint_range(config):
+    if config[CONF_MIN_VALUE] > config[CONF_MAX_VALUE]:
+        raise cv.Invalid("min_value must not be greater than max_value")
+    return config
+
+
+_SETPOINT_SCHEMA = cv.All(
+    number.number_schema(ThermiaRoomNumber, icon="mdi:home-thermometer-outline", **_TEMPERATURE_NUMBER).extend(
+        {
+            cv.Optional(CONF_MIN_VALUE, default=SETPOINT_DEFAULT_MIN): cv.float_range(
+                min=SETPOINT_FRAME_MIN, max=SETPOINT_FRAME_MAX
+            ),
+            cv.Optional(CONF_MAX_VALUE, default=SETPOINT_DEFAULT_MAX): cv.float_range(
+                min=SETPOINT_FRAME_MIN, max=SETPOINT_FRAME_MAX
+            ),
+        }
+    ),
+    _validate_setpoint_range,
+)
+
 # Timing defaults are the values running on a Thermia pump (README.md, "Timing").
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
@@ -42,9 +76,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ROOM_TEMPERATURE): number.number_schema(
                 ThermiaRoomNumber, icon="mdi:home-thermometer", **_TEMPERATURE_NUMBER
             ),
-            cv.Optional(CONF_SETPOINT): number.number_schema(
-                ThermiaRoomNumber, icon="mdi:home-thermometer-outline", **_TEMPERATURE_NUMBER
-            ),
+            cv.Optional(CONF_SETPOINT): _SETPOINT_SCHEMA,
         }
     ).extend(cv.polling_component_schema("10s")),  # how often the entities are republished
     cv.only_on_esp32,
@@ -71,7 +103,9 @@ async def to_code(config):
         cg.add(var.set_room_temperature_number(num))
 
     if CONF_SETPOINT in config:
-        num = await number.new_number(config[CONF_SETPOINT], min_value=5.0, max_value=35.0, step=0.5)
+        conf = config[CONF_SETPOINT]
+        num = await number.new_number(conf, min_value=conf[CONF_MIN_VALUE], max_value=conf[CONF_MAX_VALUE], step=0.5)
+        cg.add(var.set_setpoint_range(conf[CONF_MIN_VALUE], conf[CONF_MAX_VALUE]))
         cg.add(num.set_parent(var))
         cg.add(num.set_kind(ThermiaRoomNumberKind.SETPOINT))
         cg.add(var.set_setpoint_number(num))

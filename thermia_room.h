@@ -38,10 +38,14 @@ class ThermiaRoomComponent : public PollingComponent {
   void set_dry_run(bool dry_run) { this->dry_run_ = dry_run; }
   void set_room_temperature_number(number::Number *num) { this->room_temperature_number_ = num; }
   void set_setpoint_number(number::Number *num) { this->setpoint_number_ = num; }
+  void set_setpoint_range(float min_c, float max_c) {
+    this->setpoint_min_c_ = min_c;
+    this->setpoint_max_c_ = max_c;
+  }
 
   // Called from ThermiaRoomNumber::control(); the new values go out with the next frame.
   void set_room_temperature(float temp_c) { this->room_temp_c_ = temp_c; }
-  void set_setpoint(float setpoint_c);  // rounded to 0.5 °C, persisted across reboots
+  void set_setpoint(float setpoint_c);  // clamped to the configured range, rounded to 0.5 °C, persisted
 
   void setup() override;
   void loop() override;
@@ -66,6 +70,8 @@ class ThermiaRoomComponent : public PollingComponent {
   number::Number *setpoint_number_{nullptr};
   float room_temp_c_{20.0f};
   float setpoint_c_{DEFAULT_SETPOINT};
+  float setpoint_min_c_{SETPOINT_MIN};
+  float setpoint_max_c_{SETPOINT_MAX};
   ESPPreferenceObject setpoint_pref_;
   uint32_t last_dry_run_ms_{0};
 

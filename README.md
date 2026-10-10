@@ -21,7 +21,7 @@ alarm, shows the temperature and uses the setpoint.
 | Entity | Range | What the pump does with it |
 |---|---|---|
 | `room_temperature` | 0.0–31.9 °C, 0.1 °C steps | Uses it as the actual indoor temperature (EXT register r01/r02) |
-| `setpoint` | 5.0–35.0 °C, 0.5 °C steps | Uses it as the indoor target (r03/r04), instead of its own HUONE / r32 setting |
+| `setpoint` | 16.0–31.5 °C, 0.5 °C steps (adjustable) | Uses it as the indoor target (r03/r04), instead of its own HUONE / r32 setting |
 
 - The setpoint is stored in flash and restored after a reboot.
 - If the pump stops receiving valid frames, it raises the room sensor alarm after a while and falls back to its own
@@ -89,6 +89,23 @@ Then feed `room_temperature` from your real room sensor, for example with a Home
 | `dry_run` | `false` | Only log the frames, do not drive the pin |
 | `update_interval` | `10s` | How often the entities are republished |
 | `room_temperature`, `setpoint` | | Optional [number](https://esphome.io/components/number/) entities |
+| `setpoint` → `min_value` | `16` | Lowest setpoint offered and sent. The pump raises the room sensor alarm below 16 °C |
+| `setpoint` → `max_value` | `31.5` | Highest setpoint offered and sent |
+
+The setpoint range only limits what the entity accepts. A value restored from flash that is outside the range is
+clamped into it at boot. The frame itself can carry 5–35 °C, so you can widen the range if your pump accepts more,
+or narrow it to keep the slider sensible:
+
+```yaml
+thermia_room:
+  pin: GPIO10
+  room_temperature:
+    name: "Room temperature (emulated)"
+  setpoint:
+    name: "Room setpoint"
+    min_value: 18      # default 16 – below 16 °C the pump raises the room sensor alarm
+    max_value: 24      # default 31.5
+```
 
 **Do not rename entities in YAML** once they are in Home Assistant. ESPHome derives the entity ID from `name:`, so a
 rename creates a new entity and loses its history. Change the display name in Home Assistant instead.

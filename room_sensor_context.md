@@ -482,3 +482,57 @@ połówkach stopnia. Suma ma 5 bitów = 32 wartości, więc dla danego pola wyst
 Tryb: `experiment_scan: {payload: 23.0, fields: [20, 22, 19, 23]}` – na każde pole 32 sumy, każda ramka testowa 2×
 z rzędu + 1 poprawna; ~70 min. Sukces = r01 → 23 (ramka przyjęta), r03/r04 ≠ 21.0 (nowa nastawa).
 Firmware skompilowane, ale upload nieudany – urządzenie nieosiągalne (No route to host). YAML przywrócony.
+
+### 14f. OTA zawiesza ESP (2026-10-08)
+
+Dwie próby OTA firmware z eksperymentem 3 (12:38 i 15:03) – obie razy ESP przestało odpowiadać zaraz po starcie
+transferu (22% / „receiving chunk result response: timed out”) i wróciło dopiero po odłączeniu zasilania. Inne
+urządzenia w sieci budowy (.1, .97, .99) działały cały czas → to zawieszenie ESP, nie sieci. Wcześniejsze OTA tej
+nocy (00:13, 00:33) przeszły. Działające firmware zostaje nienaruszone (partycja OTA). Przyczyna nieznana –
+podejrzenie: przerwania RMT / programowego slave I2C (`thermia`) w trakcie kasowania/zapisu flash. Do czasu
+wyjaśnienia: wgrywanie przez USB. Gotowy obraz: `firmware/ostrow-room-sensor-scan-checksum.factory.bin`.
+
+### 14g. PRZEŁOM: nastawa rozszyfrowana (2026-10-08, brute force sumy kontrolnej)
+
+Firmware z lokalnym esphome-thermia + `experiment_scan` (pola 20/22/19/23, każda z 32 sum ×2 ramki + 1 poprawna),
+wgrane OTA o ~14:49 UTC (tym razem bez zawieszenia). Wyniki (payload 23.0):
+
+| Pole (°C) | Przyjęta suma | Reakcja pompy |
+|---|---|---|
+| 20 | **31** (jedyna z 32) | r01/r02 19.9 → 23.0, **r03 21 → 20**, r14 = 0 |
+| 22 | **27** (przewidziana wzorem przed testem) | r01 → 23.0, **r03 → 22** |
+| 19 | **17** (przewidziana) | r01 → 23.0, **r03 → 19** |
+| 23 | **25** (przewidziana) | r01 → 23.0, **r03 → 23** |
+
+Wszystkie 3 przewidywania wzoru (22, 19, 23) trafione – wzór potwierdzony na 4 punktach + 11 wierszach tabeli.
+
+Wniosek – prawdziwy układ ramki:
+```
+start(1)=1 | nastawa×2 (8 bitów, krok 0.5 °C) | int(8) | dec(4) | chk(5) | koniec(3)=011
+chk = (int ^ dec ^ nastawa×2) & 31        (21.0 → 42 → 42&31 = 10 = dawna „stała 0b01010”)
+```
+- „Drugi bit startu” to bit 0.5 °C nastawy (dla pełnych stopni zawsze 0 → wyglądał na stały).
+- Zgodne z forum (maalampofoorumi): prawdziwy czujnik 086U6003 zmienia nastawę co 0.5 °C.
+- Pompa SPRAWDZA sumę kontrolną (31 z 32 wartości odrzucone po cichu). Wcześniejsze wyświetlenia 92/242 musiały
+  więc przejść przypadkiem (ramka przesunięta, suma akurat zgodna) – do sprawdzenia.
+- Przeplatane poprawne ramki (21.0) przywracają r03 = 21 – zmiana nastawy działa od pierwszej przyjętej ramki.
+
+Kod wgrany OTA 2026-10-08 ~16:01 (firmware z lokalnym esphome-thermia – dziesiętne; YAML użytkownika: włączona
+encja `setpoint: name: "Pok. temp. zadana"`). Po starcie: nastawa 21.0, ramka bit w bit jak wcześniej, r14 = 0.
+`thermia_room_frame.*` przepisane na nowy układ (`setpoint_half`, `encode_raw_frame`
+bez wariantów sumy), encja `setpoint:` przywrócona (5–35 °C, krok 0.5, zapis w flash pod nowym kluczem
+`thermia_room_setpoint_v2`), `experiment_scan: {setpoints: [...]}`, start bits 0–1. Test hosta 1813/1813,
+kompilacja ESPHome OK. Do potwierdzenia na pompie: wartości x.5 °C.
+
+## 15. Porządki i dokumentacja (2026-10-08)
+
+- Kod wyczyszczony z mechanizmów eksperymentalnych (skan typów §14d, brute force sum §14g, encje bitów startu/końca
+  §14c, `short_bit_value`, `setpoint_in_checksum`, tryb bez `frame_gap`). Domyślne parametry = wartości działające
+  na pompie (60000/82000/388000 µs, `frame_gap` 4 s, `dry_run` false). Nastawa (`setpoint`) jest encją stałą.
+- Znalezisko przy porządkach: na ESP32 z frameworkiem ESP-IDF brakowało `driver/rmt_tx.h`, bo ESPHome wycina
+  nieużywane sterowniki IDF. Komponent deklaruje teraz `esp_driver_rmt`. Na S3 działało przypadkiem.
+- YAML użytkownika: usunięte encje eksperymentalne i nieaktualne komentarze; nazwy encji bez zmian.
+- Nowy `README.md` (EN) z grafikami `docs/wiring.svg`, `docs/timing.svg`, `docs/frame-layout.svg`; `CONTEXT.md`
+  przepisany na stan bieżący. Kompilacja OK: przykład (ESP32, ESP-IDF) i YAML użytkownika (S3, lokalny thermia).
+  Test hosta 1810/1810. Wgrane OTA 2026-10-08 ~16:43 UTC z YAML użytkownika (thermia z GitHuba, commit 23d5a65 z
+  dziesiętnymi): nastawa 16.0 odtworzona z flash → r03 = 16, temperatura 21.5 → r01/r02 = 21/5, r14 = 0.

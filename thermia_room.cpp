@@ -125,6 +125,8 @@ void ThermiaRoomComponent::setup() {
   if (this->setpoint_number_ != nullptr && this->setpoint_pref_.load(&stored) && stored >= SETPOINT_MIN &&
       stored <= SETPOINT_MAX)
     this->setpoint_c_ = stored;
+  // Keep a restored (or the default) setpoint inside the configured range - e.g. after min_value was raised.
+  this->setpoint_c_ = std::clamp(this->setpoint_c_, this->setpoint_min_c_, this->setpoint_max_c_);
 
   if (this->dry_run_)
     return;  // nothing is driven, no RMT channel needed
@@ -138,10 +140,7 @@ void ThermiaRoomComponent::setup() {
 }
 
 void ThermiaRoomComponent::set_setpoint(float setpoint_c) {
-  if (setpoint_c < SETPOINT_MIN)
-    setpoint_c = SETPOINT_MIN;
-  if (setpoint_c > SETPOINT_MAX)
-    setpoint_c = SETPOINT_MAX;
+  setpoint_c = std::clamp(setpoint_c, this->setpoint_min_c_, this->setpoint_max_c_);
   this->setpoint_c_ = std::lround(setpoint_c * 2.0f) / 2.0f;
   this->setpoint_pref_.save(&this->setpoint_c_);
 }
@@ -230,7 +229,8 @@ void ThermiaRoomComponent::dump_config() {
                 this->space_short_us_, this->space_long_us_);
   ESP_LOGCONFIG(TAG, "  Gap between frames: %" PRIu32 " ms", this->frame_gap_ms_);
   ESP_LOGCONFIG(TAG, "  Polarity inverted: %s", YESNO(this->polarity_invert_));
-  ESP_LOGCONFIG(TAG, "  Setpoint: %.1f °C", this->setpoint_c_);
+  ESP_LOGCONFIG(TAG, "  Setpoint: %.1f °C (allowed %.1f-%.1f °C)", this->setpoint_c_, this->setpoint_min_c_,
+                this->setpoint_max_c_);
   if (this->dry_run_)
     ESP_LOGCONFIG(TAG, "  DRY RUN - frames are only logged, the pin is not driven");
 }
