@@ -44,8 +44,8 @@ class ThermiaRoomComponent : public PollingComponent {
   }
 
   // Called from ThermiaRoomNumber::control(); the new values go out with the next frame.
-  void set_room_temperature(float temp_c) { this->room_temp_c_ = temp_c; }
-  void set_setpoint(float setpoint_c);  // clamped to the configured range, rounded to 0.5 °C, persisted
+  void set_room_temperature(float temp_c);  // clamped to 0.0-31.9 °C, rounded to 0.1 °C, persisted
+  void set_setpoint(float setpoint_c);       // clamped to the configured range, rounded to 0.5 °C, persisted
 
   void setup() override;
   void loop() override;
@@ -73,6 +73,7 @@ class ThermiaRoomComponent : public PollingComponent {
   float setpoint_min_c_{SETPOINT_MIN};
   float setpoint_max_c_{SETPOINT_MAX};
   ESPPreferenceObject setpoint_pref_;
+  ESPPreferenceObject room_temp_pref_;
   uint32_t last_dry_run_ms_{0};
 
 #if defined(USE_ESP32) && SOC_RMT_SUPPORTED

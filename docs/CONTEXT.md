@@ -3,7 +3,11 @@
 Stan na **2026-10-08**: **emulacja czujnika pokojowego działa na pompie**, łącznie z temperaturą zadaną.
 Na ESP wgrana wersja po porządkach (OTA 16:43 UTC, `thermia` z GitHuba) – potwierdzone: 21.5 °C → r01/r02, nastawa 16.0 → r03.
 Ten plik opisuje stan bieżący. Pełna historia researchu, z błędnymi hipotezami i dowodami: `room_sensor_context.md`.
-Opis komponentu po angielsku (podłączenie, protokół, grafiki): `README.md`.
+Opis komponentu po angielsku (podłączenie, protokół, grafiki): `../README.md`.
+
+**Repozytorium (od 2026-10-11):** `/home/marcin/repo/private/esphome-thermia-room` → `github.com/mdepa91/esphome-thermia-room`,
+układ jak esphome-thermia: `components/thermia_room/`, `docs/`, `test/`, przykłady i CI. Stara kopia robocza
+`/home/marcin/projects/thermia/custom_components/thermia_room` – już nie rozwijać.
 
 ## 1. Cel i efekt
 
@@ -47,24 +51,25 @@ ESP32 emuluje więc czujnik na zaciskach **303/304** i wysyła:
 
 ## 4. Kod (ten katalog)
 
-| Plik | Rola |
+| Plik (w `components/thermia_room/`) | Rola |
 |---|---|
 | `thermia_room_frame.h/.cpp` | enkoder/dekoder ramki (bez zależności od sprzętu) |
 | `thermia_room.h/.cpp` | sterownik RMT: ramka z `loop()` po `frame_gap` ciszy; `update()` tylko odświeża encje |
 | `thermia_room_number.h/.cpp` | encje `room_temperature` / `setpoint` |
 | `__init__.py` | schemat YAML; deklaruje `esp_driver_rmt` (bez tego ESP32 z ESP-IDF się nie kompiluje) |
 | `docs/*.svg` | grafiki do README (generowane skryptem Pythona, nie ręcznie) |
-| `../../test/test_room_frame.cpp` | test hosta (1810 sprawdzeń, w tym zrzuty linii i nastawy potwierdzone na pompie) |
-| `../../room_sensor/esp32-room-sensor-thermia.example.yaml` | przykładowa konfiguracja |
+| `test/test_room_frame.cpp` | test hosta (1810 sprawdzeń, w tym zrzuty linii i nastawy potwierdzone na pompie) |
+| `example.yaml`, `example-with-thermia.yaml` | przykładowe konfiguracje (kompilowane w CI) |
 
 - Zakres nastawy: `setpoint: min_value/max_value`, domyślnie **16–31.5 °C** (2026-10-10: poniżej 16 °C pompa zgłasza
   alarm czujnika – obserwacja użytkownika). Odtworzona z flash wartość spoza zakresu jest przycinana przy starcie;
   ramka technicznie niesie 5–35 °C.
-- Nastawa jest zapisywana w flash pod kluczem `thermia_room_setpoint_v2` (float). Temperatura pokojowa nie jest
-  zapisywana: po restarcie startuje od 20.0, dopóki HA jej nie ustawi.
+- Nastawa (`thermia_room_setpoint_v2`) i temperatura pokojowa (`thermia_room_room_temp_v1`, od 2026-10-11) są
+  zapisywane w flash tylko przy zmianie (po zaokrągleniu), ESPHome grupuje zapisy (`flash_write_interval`, 1 min).
+  NaN (np. niedostępny czujnik HA w lambdzie) jest ignorowany. Ustawianie z lambdy: `number.set` – przykład w README.
 - 2026-10-08 kod wyczyszczony z eksperymentów: skanu typów, brute force sum, encji bitów startu/końca,
   `short_bit_value`, `setpoint_in_checksum` i trybu legacy bez `frame_gap`. Ich opis i wyniki są w
-  `room_sensor_context.md` §14c–§14g. Nie ma gita, więc usuniętego kodu nie da się odtworzyć z historii.
+  `room_sensor_context.md` §14c–§14g. Usuniętego kodu nie ma też w historii gita (repo założone po porządkach).
 - Log: DEBUG = jedna linia na ramkę („sending 20.3 °C, setpoint 21.0 °C”), VERBOSE = suma i przebieg `I`/`_I`.
 
 ## 5. Budowanie i wgrywanie (bez lokalnego ESPHome – Docker)
@@ -89,7 +94,7 @@ docker run --rm --network host -v $S:/config -v ~/projects/thermia:/proj:ro \
 1. ~~Push dziesiętnych esphome-thermia~~ – zrobione przez użytkownika (commit 23d5a65, 2026-10-08).
 2. Sprawdzić na pompie nastawę x.5 (np. 21.5).
 3. Przyczyna zawieszeń przy OTA (pkt 5).
-4. Opcjonalnie: zapisywanie temperatury pokojowej w flash, żeby po restarcie nie startowała od 20.0.
+4. ~~Zapisywanie temperatury pokojowej w flash~~ – zrobione 2026-10-11.
 5. Opcjonalnie: podsłuch kierunku pompa → czujnik (PC817 na wolny GPIO). Do działania nie jest potrzebny.
 6. Okazjonalne 92 °C z czasów `frame_gap` 2 s – przy 4 s nie obserwowano. Obserwować dalej.
 

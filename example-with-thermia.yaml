@@ -1,0 +1,58 @@
+# Example configuration: one ESP32-S3 running both components
+#   - thermia_room (this repo): room sensor emulation on terminals 303/304
+#   - thermia (github.com/mdepa91/esphome-thermia): pump registers over the EXT connector (I2C via level shifter)
+# Pins match the esphome-thermia-pcb board. See README.md, "Using it with esphome-thermia".
+
+esphome:
+  name: thermia
+  friendly_name: Thermia
+
+external_components:
+  - source: github://mdepa91/esphome-thermia-room
+    components: [thermia_room]
+  - source: github://mdepa91/esphome-thermia
+    components: [thermia]
+
+esp32:
+  variant: esp32s3
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    password: !secret fallback_password
+
+thermia_room:
+  pin: GPIO16                          # TLP241A on 303/304
+  room_temperature:
+    name: "Room temperature (emulated)"
+  setpoint:
+    name: "Room setpoint"
+
+thermia:
+  sda_pin: GPIO15                      # EXT via TCA9406 level shifter
+  scl_pin: GPIO14
+  link:
+    name: "Pump EXT link"
+  temp_indoor:
+    name: "Indoor temperature (pump)"  # r01/r02 - follows room_temperature
+  temp_indoor_target:
+    name: "Indoor target (pump)"       # r03/r04 - follows setpoint while the room sensor is OK
+  temp_outdoor:
+    name: "Outdoor temperature"
+  alarm_indoor_sensor:
+    name: "Alarm: room sensor"         # on when the pump stops accepting room sensor frames
+  setting_indoor_temp:
+    name: "Fallback setpoint (without room sensor)"   # r32 - used only while the room sensor has an alarm
+  setting_room_factor:
+    name: "Room factor"                # 0-4, how strongly the room temperature corrects the curve

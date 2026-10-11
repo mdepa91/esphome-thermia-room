@@ -128,6 +128,13 @@ void ThermiaRoomComponent::setup() {
   // Keep a restored (or the default) setpoint inside the configured range - e.g. after min_value was raised.
   this->setpoint_c_ = std::clamp(this->setpoint_c_, this->setpoint_min_c_, this->setpoint_max_c_);
 
+  // Last room temperature, so the pump gets a sensible value right after a reboot instead of 20.0 until Home
+  // Assistant (or a lambda) sets it again.
+  this->room_temp_pref_ = global_preferences->make_preference<float>(fnv1_hash("thermia_room_room_temp_v1"));
+  if (this->room_temperature_number_ != nullptr && this->room_temp_pref_.load(&stored) && stored >= 0.0f &&
+      stored <= 31.9f)
+    this->room_temp_c_ = stored;
+
   if (this->dry_run_)
     return;  // nothing is driven, no RMT channel needed
 
@@ -140,9 +147,25 @@ void ThermiaRoomComponent::setup() {
 }
 
 void ThermiaRoomComponent::set_setpoint(float setpoint_c) {
+  if (std::isnan(setpoint_c))
+    return;  // e.g. a lambda passing on an unavailable Home Assistant sensor
   setpoint_c = std::clamp(setpoint_c, this->setpoint_min_c_, this->setpoint_max_c_);
-  this->setpoint_c_ = std::lround(setpoint_c * 2.0f) / 2.0f;
+  setpoint_c = std::lround(setpoint_c * 2.0f) / 2.0f;
+  if (setpoint_c == this->setpoint_c_)
+    return;  // unchanged - spare the flash
+  this->setpoint_c_ = setpoint_c;
   this->setpoint_pref_.save(&this->setpoint_c_);
+}
+
+void ThermiaRoomComponent::set_room_temperature(float temp_c) {
+  if (std::isnan(temp_c))
+    return;  // e.g. a lambda passing on an unavailable Home Assistant sensor
+  // Same rounding as the frame, so repeated updates with sub-0.1 °C noise do not count as a change.
+  temp_c = std::lround(std::clamp(temp_c, 0.0f, 31.9f) * 10.0f) / 10.0f;
+  if (temp_c == this->room_temp_c_)
+    return;  // unchanged - spare the flash
+  this->room_temp_c_ = temp_c;
+  this->room_temp_pref_.save(&this->room_temp_c_);
 }
 
 void ThermiaRoomComponent::update() {

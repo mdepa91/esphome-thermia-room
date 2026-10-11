@@ -23,7 +23,8 @@ alarm, shows the temperature and uses the setpoint.
 | `room_temperature` | 0.0–31.9 °C, 0.1 °C steps | Uses it as the actual indoor temperature (EXT register r01/r02) |
 | `setpoint` | 16.0–31.5 °C, 0.5 °C steps (adjustable) | Uses it as the indoor target (r03/r04), instead of its own HUONE / r32 setting |
 
-- The setpoint is stored in flash and restored after a reboot.
+- The room temperature and the setpoint are stored in flash and restored after a reboot, so the pump keeps getting
+  sensible values even before Home Assistant reconnects. They are written only when they actually change.
 - If the pump stops receiving valid frames, it raises the room sensor alarm after a while and falls back to its own
   setpoint (r32).
 - Only the sensor → pump direction is implemented. The original sensor has a display and probably also receives
@@ -63,9 +64,8 @@ component 406 ("room sensor") in the wiring diagram.
 
 ```yaml
 external_components:
-  - source:
-      type: local
-      path: custom_components
+  - source: github://mdepa91/esphome-thermia-room
+    components: [thermia_room]
 
 thermia_room:
   pin: GPIO10
@@ -75,8 +75,9 @@ thermia_room:
     name: "Room setpoint"
 ```
 
-Then feed `room_temperature` from your real room sensor, for example with a Home Assistant automation that calls
-`number.set_value` whenever the sensor changes.
+Then feed `room_temperature` from your real room sensor – with a Home Assistant automation that calls
+`number.set_value`, or directly on the ESP (see [Setting the room temperature](#setting-the-room-temperature)).
+A complete configuration is in [`example.yaml`](example.yaml).
 
 | Option | Default | Description |
 |---|---|---|
@@ -110,6 +111,49 @@ thermia_room:
 **Do not rename entities in YAML** once they are in Home Assistant. ESPHome derives the entity ID from `name:`, so a
 rename creates a new entity and loses its history. Change the display name in Home Assistant instead.
 
+### Setting the room temperature
+
+`room_temperature` and `setpoint` are ordinary [number](https://esphome.io/components/number/) entities. Give them an
+`id` and set them with the `number.set` action, from any sensor or lambda, without a Home Assistant automation:
+
+```yaml
+thermia_room:
+  pin: GPIO16
+  room_temperature:
+    id: room_temp
+    name: "Room temperature (emulated)"
+
+sensor:
+  # A room sensor from Home Assistant (e.g. Zigbee) – forwarded on every change
+  - platform: homeassistant
+    id: ha_room_temp
+    entity_id: sensor.living_room_temperature
+    on_value:
+      - number.set:
+          id: room_temp
+          value: !lambda 'return x;'
+
+interval:
+  # Or any computed value – here once a minute, keeping the last value while Home Assistant is unavailable
+  - interval: 60s
+    then:
+      - number.set:
+          id: room_temp
+          value: !lambda |-
+            float t = id(ha_room_temp).state;
+            return std::isnan(t) ? id(room_temp).state : t;
+```
+
+A sensor wired to the ESP itself (DS18B20, BME280, …) works the same way – call `number.set` in its `on_value`, and
+the pump gets the room temperature even without Home Assistant. From C++ in a lambda:
+`id(room_temp).make_call().set_value(21.5).perform();`.
+
+- Values are clamped to 0.0–31.9 °C and rounded to 0.1 °C. A new value goes out with the next frame, within about
+  10–12 s. NaN (e.g. an unavailable Home Assistant sensor) is ignored and the last value is kept.
+- Both values are written to flash only when they change. ESPHome batches the writes (`preferences:
+  flash_write_interval`, default 1 min), so even a sensor that changes every few seconds costs at most one write per
+  minute.
+
 ## Using it with esphome-thermia
 
 This component only **talks to** the pump: it sends a room temperature and a setpoint, and the room sensor port
@@ -135,14 +179,14 @@ What the two do together:
 - **Room factor:** `setting_room_factor` (r3C, 0–4) sets how strongly the room temperature corrects the heating
   curve. With 0 the pump only displays the room temperature.
 
+Complete configuration: [`example-with-thermia.yaml`](example-with-thermia.yaml). The relevant parts:
+
 ```yaml
 external_components:
-  - source:
-      type: local
-      path: custom_components          # this component (thermia_room)
-  - source:
-      type: git
-      url: https://github.com/mdepa91/esphome-thermia
+  - source: github://mdepa91/esphome-thermia-room
+    components: [thermia_room]
+  - source: github://mdepa91/esphome-thermia
+    components: [thermia]
 
 esp32:
   variant: esp32s3
@@ -230,15 +274,18 @@ The frame encoder has no hardware dependencies and a host test. It covers the au
 the setpoints confirmed on the pump, and round trips over all values:
 
 ```sh
-g++ -std=c++17 -I custom_components/thermia_room custom_components/thermia_room/thermia_room_frame.cpp \
-    test/test_room_frame.cpp -o /tmp/test_room_frame && /tmp/test_room_frame
+g++ -std=c++17 -Wall -I components/thermia_room components/thermia_room/thermia_room_frame.cpp \
+    test/test_room_frame.cpp -o test/test_room_frame && ./test/test_room_frame
 ```
 
+CI runs this test and compiles both example configurations on every push.
+
 Files:
-- `thermia_room_frame.*`: frame encoder and decoder;
-- `thermia_room.*`: RMT line driver and entities;
-- `room_sensor_context.md`: full research log, in Polish;
-- `CONTEXT.md`: summary for continuing the work, in Polish.
+- `components/thermia_room/thermia_room_frame.*`: frame encoder and decoder;
+- `components/thermia_room/thermia_room.*`: RMT line driver and entities;
+- `docs/*.svg`: the diagrams in this README;
+- `docs/room_sensor_context.md`: full research log, in Polish;
+- `docs/CONTEXT.md`: summary for continuing the work, in Polish.
 
 ### How the format was found
 

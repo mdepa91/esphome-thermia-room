@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run frame encoder tests
+        run: |
+          g++ -std=c++17 -Wall -Wextra -I components/thermia_room components/thermia_room/thermia_room_frame.cpp test/test_room_frame.cpp -o test/test_room_frame
+          ./test/test_room_frame
+
+  esphome-compile:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: esp32
+            config: example.yaml
+            sed: ""
+          - target: esp32-c3
+            config: example.yaml
+            sed: "s#board: esp32dev#board: esp32-c3-devkitm-1#; s#GPIO25#GPIO6#"
+          - target: esp32-s3-with-thermia
+            config: example-with-thermia.yaml
+            sed: ""
+    name: esphome-compile (${{ matrix.target }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ESPHome
+        run: pip install esphome
+      - name: Prepare CI config (local component, dummy secrets)
+        run: |
+          sed 's#source: github://mdepa91/esphome-thermia-room#source: {type: local, path: components}#' ${{ matrix.config }} > ci.yaml
+          if [ -n "${{ matrix.sed }}" ]; then sed -i "${{ matrix.sed }}" ci.yaml; fi
+          cp secrets.example.yaml secrets.yaml
+          sed -i "s#^api_encryption_key:.*#api_encryption_key: \"$(openssl rand -base64 32)\"#" secrets.yaml
+      - name: Validate
+        run: esphome config ci.yaml
+      - name: Compile
+        run: esphome compile ci.yaml

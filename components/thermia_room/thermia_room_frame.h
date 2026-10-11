@@ -1,7 +1,7 @@
 #pragma once
 
 // Pure, host-testable encoder for the room sensor frame (no hardware access - see thermia_room.h/.cpp for the line
-// driver, README.md for the protocol and room_sensor_context.md for how it was reverse-engineered).
+// driver, README.md for the protocol and docs/room_sensor_context.md for how it was reverse-engineered).
 //
 // 29 bits, transmission order, every field LSB-first:
 //

@@ -1,0 +1,45 @@
+# Example configuration: ESP32 emulating the room sensor of a Thermia / Danfoss heat pump (terminals 303/304).
+# Wiring: README.md, "Hardware". Tested on an ESP32-S3 with ESPHome 2026.9.1.
+
+esphome:
+  name: thermia-room
+  friendly_name: Thermia room sensor
+
+external_components:
+  - source: github://mdepa91/esphome-thermia-room
+    components: [thermia_room]
+
+esp32:
+  board: esp32dev  # any ESP32 variant with RMT (ESP32, -S2, -S3, -C3, ...)
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    password: !secret fallback_password
+
+thermia_room:
+  pin: GPIO25             # drives the TLP241A photoMOS across 303/304
+  # Defaults are the values running on a Thermia pump - change only if you know why:
+  # mark_us: 60000
+  # space_short_us: 82000
+  # space_long_us: 388000
+  # frame_gap: 4s         # idle between frames; the pump syncs on it (2-4 s works, 0 does not)
+  # polarity_invert: false
+  # dry_run: false        # true = only log the frames, do not drive the pin
+  room_temperature:
+    name: "Room temperature (emulated)"   # feed it from your real room sensor, e.g. a HA automation
+  setpoint:
+    name: "Room setpoint"                  # the pump regulates to it
+    # min_value: 16       # default; below 16 °C the pump raises the room sensor alarm
+    # max_value: 31.5     # default
