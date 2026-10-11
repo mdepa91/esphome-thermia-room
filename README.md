@@ -13,6 +13,10 @@ curve on the fly to hold the setpoint. The room factor setting decides how stron
 **Status:** working on a Thermia heat pump since 2026-10. The pump accepts the frames, clears the room sensor
 alarm, shows the temperature and uses the setpoint.
 
+**Dashboard:** [thermia-heatpump-card](https://github.com/mdepa91/thermia-heatpump-card) is a Lovelace card that draws the whole pump
+and has − / + buttons for this setpoint. The component publishes a *Thermia room card map* entity, so the card finds
+the room temperature and the setpoint after you pick the ESPHome device.
+
 > **Tested on:** ESP32-S3, ESPHome 2026.9.1, running next to [esphome-thermia](https://github.com/mdepa91/esphome-thermia)
 > on the same board – see [Using it with esphome-thermia](#using-it-with-esphome-thermia).
 
