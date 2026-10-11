@@ -92,6 +92,7 @@ A complete configuration is in [`example.yaml`](example.yaml).
 | `room_temperature`, `setpoint` | | Optional [number](https://esphome.io/components/number/) entities |
 | `setpoint` → `min_value` | `16` | Lowest setpoint offered and sent. The pump raises the room sensor alarm below 16 °C |
 | `setpoint` → `max_value` | `31.5` | Highest setpoint offered and sent |
+| `card_map` | name: *Thermia room card map* | Diagnostic select listing `room_temperature=` / `setpoint=` with the entity names, so [thermia-heatpump-card](https://github.com/mdepa91/thermia-heatpump-card) can pick the entities by itself once you choose this device. Read-only; `internal: true` hides it from Home Assistant. |
 
 The setpoint range only limits what the entity accepts. A value restored from flash that is outside the range is
 clamped into it at boot. The frame itself can carry 5–35 °C, so you can widen the range if your pump accepts more,
