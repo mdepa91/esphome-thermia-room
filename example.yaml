@@ -44,4 +44,4 @@ thermia_room:
     # min_value: 16       # default; below 16 °C the pump raises the room sensor alarm
     # max_value: 31.5     # default
   transmit:
-    name: "Room sensor transmission"       # off = the pump falls back to its own setpoint (r32)
+    name: "Room sensor transmission"       # diagnostic; off = room sensor alarm, the pump uses r32

@@ -94,7 +94,7 @@ A complete configuration is in [`example.yaml`](example.yaml).
 | `dry_run` | `false` | Only log the frames, do not drive the pin |
 | `update_interval` | `10s` | How often the entities are republished |
 | `room_temperature`, `setpoint` | | Optional [number](https://esphome.io/components/number/) entities |
-| `transmit` | | Optional [switch](https://esphome.io/components/switch/) that turns the frames on and off. Off leaves the line idle, as if no room sensor were connected: the pump raises the room sensor alarm and regulates to its fallback setpoint (r32). A frame already on the wire is finished first. Restored at boot, on by default (`restore_mode`) |
+| `transmit` | | Optional diagnostic [switch](https://esphome.io/components/switch/) that turns the frames on and off, e.g. while checking the wiring. Off leaves the line idle, as if no room sensor were connected: the pump raises the room sensor alarm and regulates to its fallback setpoint (r32). A frame already on the wire is finished first. Restored at boot, on by default (`restore_mode`). To stop the pump using the room sensor in normal operation, set the room factor to 0 instead (see [Using it with esphome-thermia](#using-it-with-esphome-thermia)) |
 | `setpoint` → `min_value` | `16` | Lowest setpoint offered and sent. The pump raises the room sensor alarm below 16 °C |
 | `setpoint` → `max_value` | `31.5` | Highest setpoint offered and sent |
 | `card_map` | name: *Thermia room card map* | Diagnostic select listing `room_temperature=` / `setpoint=` / `transmit=` with the entity names, so [thermia-heatpump-card](https://github.com/mdepa91/ha-thermia-heatpump-card) can pick the entities by itself once you choose this device. Read-only; `internal: true` hides it from Home Assistant. |
@@ -179,11 +179,16 @@ What the two do together:
   (r01–r04, with tenths) that the pump took them over.
 - **Alarm:** `alarm_indoor_sensor` (r14 bit 4) turns on when the pump stops accepting room sensor frames, for example
   when the ESP is offline or the wiring is wrong.
-- **Fallback setpoint:** while that alarm is on, the pump regulates to its own setpoint, `setting_indoor_temp` (r32).
-  Keep it at a sensible value, because it takes over whenever the emulated sensor drops out. While the sensor works,
-  the pump ignores it and uses `setpoint` from this component.
+- **Fallback setpoint:** while that alarm is on, or while the room factor is 0, the pump regulates to its own
+  setpoint, `setting_indoor_temp` (r32). Keep it at a sensible value, because it takes over whenever the emulated
+  sensor drops out. While the sensor works and the room factor is above 0, the pump ignores it and uses `setpoint`
+  from this component.
 - **Room factor:** `setting_room_factor` (r3C, 0–4) sets how strongly the room temperature corrects the heating
-  curve. With 0 the pump only displays the room temperature.
+  curve. **0 switches the room sensor off:** according to the pump manual, the pump then takes r32 as its target
+  and only displays the room temperature, without raising an alarm. This is the clean way to stop using the room
+  sensor for a while; set 1–4 again to bring it back. `temp_indoor_target` (r03) shows which target is in use.
+  The diagnostic `transmit` switch also takes the sensor away, but the pump sees that as a fault and raises the
+  room sensor alarm.
 
 Complete configuration: [`example-with-thermia.yaml`](example-with-thermia.yaml). The relevant parts:
 
@@ -270,9 +275,9 @@ registers:
 |---|---|
 | r01 / r02 | Indoor temperature, whole degrees / tenths. Follows `room_temperature` |
 | r03 / r04 | Indoor target used by the pump. Follows `setpoint` while the sensor is OK |
-| r32 | The pump's own setpoint (HUONE). Used only while the room sensor has an alarm |
+| r32 | The pump's own setpoint (HUONE). Used while the room sensor has an alarm or the room factor is 0 |
 | r14 bit 4 | Room sensor alarm |
-| r3C | Room factor (0–4). How strongly the room temperature corrects the supply temperature |
+| r3C | Room factor (0–4). How strongly the room temperature corrects the supply temperature; 0 = room sensor off, r32 is the target |
 
 ## Development
 

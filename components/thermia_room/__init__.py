@@ -6,7 +6,6 @@ import esphome.config_validation as cv
 from esphome import pins
 from esphome.components import esp32, number, select, switch
 from esphome.const import (
-    ENTITY_CATEGORY_CONFIG,
     ENTITY_CATEGORY_DIAGNOSTIC,
     CONF_ID,
     CONF_MAX_VALUE,
@@ -35,7 +34,8 @@ CONF_POLARITY_INVERT = "polarity_invert"
 CONF_DRY_RUN = "dry_run"
 CONF_ROOM_TEMPERATURE = "room_temperature"
 CONF_SETPOINT = "setpoint"
-# Switch that turns the frames on and off (off = no room sensor: the pump uses its fallback setpoint r32).
+# Diagnostic switch that turns the frames on and off (off = no room sensor: alarm, the pump uses r32). In normal
+# operation the room sensor is switched off with room factor 0 (esphome-thermia), which raises no alarm.
 CONF_TRANSMIT = "transmit"
 # Diagnostic select listing "<config key>=<entity name>" for thermia-heatpump-card's device auto-detection
 # (see card_map_select.h). On by default; `card_map: {internal: true}` hides it from Home Assistant.
@@ -91,7 +91,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_TRANSMIT): switch.switch_schema(
                 ThermiaRoomSwitch,
                 icon="mdi:access-point",
-                entity_category=ENTITY_CATEGORY_CONFIG,
+                entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
                 default_restore_mode="RESTORE_DEFAULT_ON",
             ),
             cv.Optional(CONF_CARD_MAP, default={CONF_NAME: "Thermia room card map"}): select.select_schema(
