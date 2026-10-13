@@ -38,6 +38,8 @@ thermia_room:
     name: "Room temperature (emulated)"
   setpoint:
     name: "Room setpoint"
+  transmit:
+    name: "Room sensor transmission"   # off = alarm_indoor_sensor, the pump uses r32
 
 thermia:
   sda_pin: GPIO15                      # EXT via TCA9406 level shifter

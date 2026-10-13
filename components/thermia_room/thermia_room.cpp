@@ -135,6 +135,14 @@ void ThermiaRoomComponent::setup() {
       stored <= 31.9f)
     this->room_temp_c_ = stored;
 
+  // Transmit switch: restored according to its restore_mode (default: on).
+  if (this->transmit_switch_ != nullptr) {
+    auto restored = this->transmit_switch_->get_initial_state_with_restore_mode();
+    if (restored.has_value())
+      this->transmit_ = *restored;
+    this->transmit_switch_->publish_state(this->transmit_);
+  }
+
   if (this->dry_run_)
     return;  // nothing is driven, no RMT channel needed
 
@@ -144,6 +152,17 @@ void ThermiaRoomComponent::setup() {
   ESP_LOGE(TAG, "RMT not supported on this chip - only dry_run is possible");
   this->mark_failed();
 #endif
+}
+
+void ThermiaRoomComponent::set_transmit(bool transmit) {
+  if (transmit == this->transmit_)
+    return;
+  this->transmit_ = transmit;
+  if (transmit) {
+    ESP_LOGI(TAG, "Transmission on");
+  } else {
+    ESP_LOGI(TAG, "Transmission off - the pump will raise the room sensor alarm and use its fallback setpoint");
+  }
 }
 
 void ThermiaRoomComponent::set_setpoint(float setpoint_c) {
@@ -178,6 +197,8 @@ void ThermiaRoomComponent::update() {
 }
 
 void ThermiaRoomComponent::loop() {
+  if (!this->transmit_)
+    return;  // the line stays idle
   if (this->dry_run_) {
     const uint32_t now = millis();
     if (now - this->last_dry_run_ms_ >= DRY_RUN_LOG_INTERVAL_MS) {
@@ -252,6 +273,7 @@ void ThermiaRoomComponent::dump_config() {
                 this->space_short_us_, this->space_long_us_);
   ESP_LOGCONFIG(TAG, "  Gap between frames: %" PRIu32 " ms", this->frame_gap_ms_);
   ESP_LOGCONFIG(TAG, "  Polarity inverted: %s", YESNO(this->polarity_invert_));
+  ESP_LOGCONFIG(TAG, "  Transmitting: %s", YESNO(this->transmit_));
   ESP_LOGCONFIG(TAG, "  Setpoint: %.1f °C (allowed %.1f-%.1f °C)", this->setpoint_c_, this->setpoint_min_c_,
                 this->setpoint_max_c_);
   if (this->dry_run_)

@@ -4,8 +4,9 @@ sensor terminals (303/304), so it regulates on real values. ESP32 only (uses the
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import pins
-from esphome.components import esp32, number, select
+from esphome.components import esp32, number, select, switch
 from esphome.const import (
+    ENTITY_CATEGORY_CONFIG,
     ENTITY_CATEGORY_DIAGNOSTIC,
     CONF_ID,
     CONF_MAX_VALUE,
@@ -17,12 +18,13 @@ from esphome.const import (
 )
 
 CODEOWNERS = []
-AUTO_LOAD = ["number", "select"]
+AUTO_LOAD = ["number", "select", "switch"]
 
 thermia_room_ns = cg.esphome_ns.namespace("thermia_room")
 ThermiaRoomComponent = thermia_room_ns.class_("ThermiaRoomComponent", cg.PollingComponent)
 ThermiaRoomNumber = thermia_room_ns.class_("ThermiaRoomNumber", number.Number)
 ThermiaRoomNumberKind = ThermiaRoomNumber.enum("Kind")
+ThermiaRoomSwitch = thermia_room_ns.class_("ThermiaRoomSwitch", switch.Switch)
 CardMapSelect = thermia_room_ns.class_("CardMapSelect", select.Select, cg.Component)
 
 CONF_MARK_US = "mark_us"
@@ -33,6 +35,8 @@ CONF_POLARITY_INVERT = "polarity_invert"
 CONF_DRY_RUN = "dry_run"
 CONF_ROOM_TEMPERATURE = "room_temperature"
 CONF_SETPOINT = "setpoint"
+# Switch that turns the frames on and off (off = no room sensor: the pump uses its fallback setpoint r32).
+CONF_TRANSMIT = "transmit"
 # Diagnostic select listing "<config key>=<entity name>" for thermia-heatpump-card's device auto-detection
 # (see card_map_select.h). On by default; `card_map: {internal: true}` hides it from Home Assistant.
 CONF_CARD_MAP = "card_map"
@@ -84,6 +88,12 @@ CONFIG_SCHEMA = cv.All(
                 ThermiaRoomNumber, icon="mdi:home-thermometer", **_TEMPERATURE_NUMBER
             ),
             cv.Optional(CONF_SETPOINT): _SETPOINT_SCHEMA,
+            cv.Optional(CONF_TRANSMIT): switch.switch_schema(
+                ThermiaRoomSwitch,
+                icon="mdi:access-point",
+                entity_category=ENTITY_CATEGORY_CONFIG,
+                default_restore_mode="RESTORE_DEFAULT_ON",
+            ),
             cv.Optional(CONF_CARD_MAP, default={CONF_NAME: "Thermia room card map"}): select.select_schema(
                 CardMapSelect, entity_category=ENTITY_CATEGORY_DIAGNOSTIC, icon="mdi:map-legend"
             ),
@@ -120,9 +130,14 @@ async def to_code(config):
         cg.add(num.set_kind(ThermiaRoomNumberKind.SETPOINT))
         cg.add(var.set_setpoint_number(num))
 
+    if CONF_TRANSMIT in config:
+        sw = await switch.new_switch(config[CONF_TRANSMIT])
+        cg.add(sw.set_parent(var))
+        cg.add(var.set_transmit_switch(sw))
+
     map_options = [CARD_MAP_MARKER] + [
         f"{key}={config[key][CONF_NAME]}"
-        for key in (CONF_ROOM_TEMPERATURE, CONF_SETPOINT)
+        for key in (CONF_ROOM_TEMPERATURE, CONF_SETPOINT, CONF_TRANSMIT)
         if key in config and config[key].get(CONF_NAME)
     ]
     card_map = await select.new_select(config[CONF_CARD_MAP], options=map_options)

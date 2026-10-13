@@ -12,6 +12,7 @@
 #include "esphome/core/hal.h"
 #include "esphome/core/preferences.h"
 #include "esphome/components/number/number.h"
+#include "esphome/components/switch/switch.h"
 
 #include "thermia_room_frame.h"
 
@@ -38,6 +39,7 @@ class ThermiaRoomComponent : public PollingComponent {
   void set_dry_run(bool dry_run) { this->dry_run_ = dry_run; }
   void set_room_temperature_number(number::Number *num) { this->room_temperature_number_ = num; }
   void set_setpoint_number(number::Number *num) { this->setpoint_number_ = num; }
+  void set_transmit_switch(switch_::Switch *sw) { this->transmit_switch_ = sw; }
   void set_setpoint_range(float min_c, float max_c) {
     this->setpoint_min_c_ = min_c;
     this->setpoint_max_c_ = max_c;
@@ -46,6 +48,8 @@ class ThermiaRoomComponent : public PollingComponent {
   // Called from ThermiaRoomNumber::control(); the new values go out with the next frame.
   void set_room_temperature(float temp_c);  // clamped to 0.0-31.9 °C, rounded to 0.1 °C, persisted
   void set_setpoint(float setpoint_c);       // clamped to the configured range, rounded to 0.5 °C, persisted
+  // Called from ThermiaRoomSwitch::write_state(). Off: no new frames (one already on the wire is finished).
+  void set_transmit(bool transmit);
 
   void setup() override;
   void loop() override;
@@ -68,6 +72,8 @@ class ThermiaRoomComponent : public PollingComponent {
 
   number::Number *room_temperature_number_{nullptr};
   number::Number *setpoint_number_{nullptr};
+  switch_::Switch *transmit_switch_{nullptr};
+  bool transmit_{true};
   float room_temp_c_{20.0f};
   float setpoint_c_{DEFAULT_SETPOINT};
   float setpoint_min_c_{SETPOINT_MIN};
