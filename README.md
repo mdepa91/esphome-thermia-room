@@ -31,6 +31,9 @@ the room temperature and the setpoint after you pick the ESPHome device.
   sensible values even before Home Assistant reconnects. They are written only when they actually change.
 - If the pump stops receiving valid frames, it raises the room sensor alarm after a while and falls back to its own
   setpoint (r32).
+- If the pump's room factor (r3C) is set to 0, the pump ignores the room sensor: it regulates to its own setpoint
+  (r32, the same fallback value as above) and only displays the room temperature. No alarm is raised. Set the room
+  factor to 1–4 to make the pump use `setpoint` and `room_temperature` again.
 - Only the sensor → pump direction is implemented. The original sensor has a display and probably also receives
   data from the pump, but the pump does not need that to accept the readings.
 
