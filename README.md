@@ -310,13 +310,6 @@ Files:
    pump accepted exactly one checksum for each setpoint. All four confirmed the formula above, and three of them
    had been predicted before the run.
 
-### Known issues
-
-- An OTA update occasionally hung the ESP32 (twice in about seven updates) until it was power-cycled. The cause is
-  not known yet. Suspects are the RMT and software-I2C interrupts running while flash is being written.
-- Half-degree setpoints (x.5 °C) follow from the confirmed formula, but have not yet been confirmed on a pump's
-  display.
-
 ## Credits
 
 - **rainisto (Jonni)**: the original reverse engineering of the room sensor protocol and the EXT/I2C protocol.
